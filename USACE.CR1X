@@ -2,7 +2,7 @@
 'Program author:  Kevin Hyde, MT Mesonet Manager, kevin.hyde@umontana.edu
 'Date:  210...'
 'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
-'211027 SR50A - Corrected temperature correction call on line 524
+'211027 v7.2.1 SR50A - Corrected temperature correction call on line 524
 '210929 v7.2.0
   ' Restored code to drive SR50A
   ' Checked against Bozeman code
