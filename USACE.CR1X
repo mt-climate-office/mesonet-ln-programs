@@ -2,7 +2,10 @@
 'Program author:  Kevin Hyde, MT Mesonet Manager, kevin.hyde@umontana.edu
 'Date:  210...'
 'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
-'
+'211027 SR50A - Corrected temperature correction call on line 524
+'210929 v7.2.0
+  ' Restored code to drive SR50A
+  ' Checked against Bozeman code
 '210903: Corrected fieldnames in tables
   'Restored elevation on air temp
   'Synchcronizing varialbes across all stations including Bozeman
@@ -68,7 +71,7 @@
 '
 '*********SHARING TERMINAL BLOCK C5
 '*****SENSOR_5 Snow Depth*******************************
-'***Snow Depth Sensor: SnowvUE - CONFIRM WHEN NEW SnowVUE RECEIvED
+'***Snow Depth Sensor: SR50A    (SnowvUE - CONFIRM WHEN NEW SnowVUE Revieved)
 '    Green:   C5      SDI-12 data  SDI_ADD: 1
 '    Red:     12v     12v power
 '    Black:   G       Power ground
@@ -129,8 +132,8 @@ Public bp               : Units bp=kPa
 Public wind_spd_1000    : Units wind_spd_1000=m s-1
 Public wind_dir_1000    : Units wind_dir_1000=arcdeg
 Public dew_point        : Units dew_point= deg C
-Public snow_depth       ':Units snow_depth= cm
-Public snow_depth_q         'Final quality number - non-dimensional
+Public snow_depth       : Units snow_depth= cm
+Public snow_depth_q      'Final quality number - non-dimensional
 
 'HygrovUE10 CSI HR temp sensor
 Public rhtemp(2)
@@ -210,19 +213,19 @@ Dim newfilename_G As String *25
 Dim DST As Long
 Dim i, PPPInfo(10) As String * 70
 
-'Related to SnowVUE (SR50A) Snow Depth measurement
+'Related to SR50A Snow Depth measurement (SnowVUE)
 Dim n 'used as a counter
-'Dim FH As Long ' File Handle
-'Dim dummystr As String
-'Public SR50A_Raw(2)       ' holds raw values as they are read from SR50A
-'Alias SR50A_Raw(1) = Dist2Targ   : Units Dist2Targ = m 'Distance from the SR50A to target
-'Alias SR50A_Raw(2) = Rawq                'Measurement quality number.
-'Public SR50A_Go As Boolean ' When true, runs the SR50A measurement cycle
-'Public Set_D2G As Boolean ' When true, sets the SR50 distance to ground
-'Public TCDT       : Units TCDT = cm 'Final temperature corrected distance
-'Public Dist2Gnd   : Units Dist2Gnd = cm 'Distance to ground
-'Public SR50A(11,2)        ' Array to hold 11 unsorted SR50A measurements
-'Public Result_SR50A(11,2) ' Sorted array of 11 SR50A measurements, smallest to largest
+Dim FH As Long ' File Handle
+Dim dummystr As String
+Public SR50A_Raw(2)       ' holds raw values as they are read from SR50A
+Alias SR50A_Raw(1) = Dist2Targ   : Units Dist2Targ = m 'Distance from the SR50A to target
+Alias SR50A_Raw(2) = Rawq                'Measurement quality number.
+Public SR50A_Go As Boolean ' When true, runs the SR50A measurement cycle
+Public Set_D2G As Boolean ' When true, sets the SR50 distance to ground
+Public TCDT       : Units TCDT = cm 'Final temperature corrected distance
+Public Dist2Gnd   : Units Dist2Gnd = cm 'Distance to ground
+Public SR50A(11,2)        ' Array to hold 11 unsorted SR50A measurements
+Public Result_SR50A(11,2) ' Sorted array of 11 SR50A measurements, smallest to largest
 
 Preservevariables
 
@@ -294,17 +297,17 @@ Modem_Power=true ' turn modem on after compile
 
   ' Initialize Snow Depth Distance to Target: Default value varies by Station
   ' Use Set_D2G to rezero 
-'  If FileSize ("USR:Dist2Gnd.txt") > 0 Then
-'    FH = FileOpen ("USR:Dist2Gnd.txt","r",0)
-'    FileRead (FH,dummystr,10)
-'    SplitStr (Dist2Gnd,dummystr,"",1,0)
-'    FileClose (FH)
-'  Else
-'    Dist2Gnd = 188.7  'Default offset REvISIT WHEN SnowvUE INSTALLED
-'  EndIf
+  If FileSize ("USR:Dist2Gnd.txt") > 0 Then
+    FH = FileOpen ("USR:Dist2Gnd.txt","r",0)
+    FileRead (FH,dummystr,10)
+    SplitStr (Dist2Gnd,dummystr,"",1,0)
+    FileClose (FH)
+  Else
+    Dist2Gnd = 188.7  'Default offset Revisit WHEN SnowVUE INSTALLED
+  EndIf
 
-snow_depth = -99  'Value placeholder until SnowVUE10 online
-snow_depth_q = -99  'Value placeholder until SnowVUE10 online
+    'snow_depth = -99  'Value placeholder when instrument not installed
+    'snow_depth_q = -99  
 '*********MAIN SCAN********************************************************** 
   Scan(3,Sec,1,0) 'Changed from 5 to 3 second scan 200929
     Battery(batt_volt)
@@ -352,13 +355,13 @@ snow_depth_q = -99  'Value placeholder until SnowVUE10 online
     ' to run the measurement sequence right before the 5-minute record is 
     ' written. This can be set to true manually if desired.
 
-'    If IfTime(237,300,Sec) Then SR50A_Go = True ' at 03 min 57 sec into 5-min period
+    If IfTime(237,300,Sec) Then SR50A_Go = True ' at 03 min 57 sec into 5-min period
 
     ' When the ground is clear of snow and debris, the SR50A can be "zeroed out",
     ' sort of speak, by setting "Set_D2G" true.  This will trigger a measurement
     ' cycle, then set "Dist2Gnd" to the result.
 
-'    If Set_D2G Then SR50A_Go = True
+    If Set_D2G Then SR50A_Go = True
 
 '*****SENSOR_9 Cameras*******************************
     ' Camera Images: Occurs in Slow Sequence Below
@@ -504,40 +507,40 @@ snow_depth_q = -99  'Value placeholder until SnowVUE10 online
     capturephotos = False
 
 '*****SENSOR_5 Snow Depth*******************************
-'***Snow Depth Sensor: SnowvUE - CONFIRM WHEN NEW SnowvUE RECEIvED
+'***Snow Depth Sensor: SR50A     SnowvUE - CONFIRM WHEN NEW SnowvUE RECEIvED
 '    Green:   C5      SDI-12 data  SDI_ADD: 1
     ' Logic to make 11 snow depth measurements, sort, store corrected values.
 
-'    If SR50A_Go Then
-'      For n = 1 To 11
-'        SemaphoreGet (1) ' So as to avoid conflicts with other C3 devices in other sequences
+    If SR50A_Go Then
+      For n = 1 To 11
+        SemaphoreGet (1) ' So as to avoid conflicts with other C5 devices in other sequences
           'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' & 'q'
-'          SDI12Recorder(SR50A_Raw(),C5,"1","M1!",1,0,-1)
-'        SemaphoreRelease (1)
+          SDI12Recorder(SR50A_Raw(),C5,"1","M1!",1,0,-1)
+        SemaphoreRelease (1)
 
-'        If SR50A_Raw(1) = "NAN" Then
-'          SR50A(n,1) = -9 : SR50A(n,2) = -9
-'        Else 'Calculate the temperature corrected distance.
-'          SR50A(n,1) = SR50A_Raw(1) * 100 * SqR((air_temp_0200 + 273.15) / 273.15)
-'          SR50A(n,2) = SR50A_Raw(2) * 1
-'        EndIf
-'        Delay (0,4,Sec)
-'      Next n
+        If SR50A_Raw(1) = "NAN" Then
+          SR50A(n,1) = -9 : SR50A(n,2) = -9
+        Else 'Calculate the temperature corrected distance.
+          SR50A(n,1) = SR50A_Raw(1) * 100 * SQR((air_temp_0200+ 273.15) / 273.15)   'panel_temp - REMOVED
+          SR50A(n,2) = SR50A_Raw(2) * 1
+        EndIf
+        Delay (0,4,Sec)
+      Next n
 
-'      SR50A_Go = False
-'      SortSpa (Result_SR50A(1,1),11,SR50A(1,1),2)
-'      TCDT = Result_SR50A(6,1) ' get the median value (#6 of 11)
-'      snow_depth_q = Result_SR50A(6,2)
-'      If Set_D2G Then ' set distance to ground
-'        Dist2Gnd = TCDT
-'  		  FH = FileOpen ("USR:Dist2Gnd.txt","w",0) ' save value to file on USR drive
-'		    Sprintf (dummystr,"%f",Dist2Gnd)
-'		    FileWrite (FH,dummystr,0)
-'		    FileClose (FH)
-'        Set_D2G = False
-'      EndIf
-'      snow_depth = Dist2Gnd - TCDT
-'    EndIf
+      SR50A_Go = False
+      SortSpa (Result_SR50A(1,1),11,SR50A(1,1),2)
+      TCDT = Result_SR50A(6,1) ' get the median value (#6 of 11)
+      snow_depth_q = Result_SR50A(6,2)
+      If Set_D2G Then ' set distance to ground
+        Dist2Gnd = TCDT
+  		  FH = FileOpen ("USR:Dist2Gnd.txt","w",0) ' save value to file on USR drive
+		    Sprintf (dummystr,"%f",Dist2Gnd)
+		    FileWrite (FH,dummystr,0)
+		    FileClose (FH)
+        Set_D2G = False
+      EndIf
+      snow_depth = Dist2Gnd - TCDT
+    EndIf
 
 '*********************** Cell Modem Reboot *************************************
     If TimeIsBetween (2,3,1440,min) Then
