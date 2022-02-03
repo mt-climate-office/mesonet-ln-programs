@@ -1,14 +1,41 @@
-'USACE Standard Program: Task Order 1
+ 'USACE Standard Program: Task Order 1
 'Program author:  Kevin Hyde, MT Mesonet Manager, kevin.hyde@umontana.edu
 'Date:  210...'
 'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
-'211027 v7.2.1 SR50A - Corrected temperature correction call on line 524
+
+'Attempt to eliminate SkippedScan errors in SlowSequence (3) SR50A
+  'Change sdi12recorder command to C! from M!
+    'Line 566
+'211116 v7.4.1: Attempt improve performance of SlowSeq (1) - SDI12 on C5
+  'Increase scan time to 60 sec from 20 sec
+    'Lines 412,414
+  'Change SDI12 command (SlowSeq (1)) to C! from M!
+    'Lines:421,439,444
+  'Change Main scan to 3 sec from 5 sec to restore WMO wind gust standard
+    ' Line 336 with cascade to Line 382 - Conditional SR50A start
+'211115 v7.4.0: Attempt to correct Skipped Scans - SlowSeq (3)
+  'Split SlowSequence '(3) Calls for Cameras, Modem Power recycle
+    'Line 474
+  'Added SlowSequence '(4) Calls for Snow Depth Sensor
+    'Line 543
+  'Revert main scan to 
+'211110 v7.3.0 > 7.3.1: First changes to address Skipped Scans and Records
+  'Change Main scan to 5 sec from 3 sec
+    ' Line 323 with cascade to Line 369 - Conditional SR50A start
+  'SlowSequence (1): Change scan rate to 20 seconds from 10 to address skipped scans 
+    'Line 401 with cascade to Line 410 - pyran multiplier
+  'Reduce camera call iterations to 4 from 10: Photos normally made by 1 or 2 tries
+    'Line 441, 492, 502, 512
+  'Move CallTable FiveMin to SlowSequence (1) from SlowSequence 3
+    'Line 448
+
+'211027 SR50A - Corrected temperature correction call on line 537
 '210929 v7.2.0
   ' Restored code to drive SR50A
   ' Checked against Bozeman code
 '210903: Corrected fieldnames in tables
   'Restored elevation on air temp
-  'Synchcronizing varialbes across all stations including Bozeman
+  'Synchcronizing variables across all stations including Bozeman
 '7.0.4 21...
 '    Reorder variables --> Modem_Power appears first
 'v7.0.3 210624
@@ -309,7 +336,7 @@ Modem_Power=true ' turn modem on after compile
     'snow_depth = -99  'Value placeholder when instrument not installed
     'snow_depth_q = -99  
 '*********MAIN SCAN********************************************************** 
-  Scan(3,Sec,1,0) 'Changed from 5 to 3 second scan 200929
+  Scan(3,Sec,1,0) 'Changed to 3 sec from 5 sec scan to restore WMO standard for wind gusts
     Battery(batt_volt)
     PanelTemp(panel_temp,60)
 
@@ -380,23 +407,23 @@ Modem_Power=true ' turn modem on after compile
     If IfTime (1325-DST,1440,Min) Then Camera_Power = false
 
     SW12 (SW12_1,Camera_Power)
-
+    
   NextScan
 
 '  **************************************************************************
 '  Group of SDI12Recorder calls on C5
-  SlowSequence
+  SlowSequence '(1)
 
-  Scan (10,Sec,5,0)         'Increase 10 to 15 if skipped scans occur or move soil into new SlowSequence
+  Scan (60,Sec,5,0)         'Increase to 60 sec from 20 to expand time for SDI12 response
 
-    SemaphoreGet (1) ' To avoid conflicts with other C3 devices in other sequences
+    SemaphoreGet (1) ' To avoid conflicts with other C5 devices in other sequences
 
-'*****SENSOR_7 Pyranometer*******************************
-'***Pyranometer: CS320
-'    White:  	C5      SDI-12 data  SDI_ADD 3
-    SDI12Recorder(pyran(),C5,"3","M4!",1,0,-1)
-    'Calculate total flux: multiplier based on program scan rate 10 Seconds
-    sol_rad_mj=sol_rad*10E-06
+  '*****SENSOR_7 Pyranometer*******************************
+  '***Pyranometer: CS320
+  '    White:  	C5      SDI-12 data  SDI_ADD 3
+    SDI12Recorder(pyran(),C5,"3","C4!",1,0,-1)
+    'Calculate total flux: multiplier based on SlowSequence scan rate of 20 Seconds
+    sol_rad_mj=sol_rad*20E-06
     'CS320 Digital Thermopile Pyranometer heater control
     DewPoint(dew_point,air_temp_0200,rh)
     AirDewDif=pyran_temp-dew_point
@@ -412,12 +439,12 @@ Modem_Power=true ' turn modem on after compile
 '*****SENSOR_6 Pluviometer*******************************
 '***Pluviometer: HydroMet PluvioII ****ADD HEATER
 '    Green:  	C5:     SDI-12 data  SDI_ADD 2
-    SDI12Recorder(Pluvio(),C5,"2","M!",1,0,-1)
+    SDI12Recorder(Pluvio(),C5,"2","C!",1,0,-1)
 
 '*****SENSOR_8 RH-temp*******************************
 '***RH-temp Sensor: HygrovUE10
 '    White:   C5      SDI-12 data  SDI_ADD: 4
-    SDI12Recorder(rhtemp(),C5,"4","M!",1,0)  
+    SDI12Recorder(rhtemp(),C5,"4","C!",1,0)  
 
     SemaphoreRelease (1)
 
@@ -427,16 +454,18 @@ Modem_Power=true ' turn modem on after compile
     IPRoute("minos.konectgds.com",1,1)
     
 	  SplitStr (PPPInfo(),Status.PPPInfo,CHR(13)&CHR(10),10,5)
-	  For i = 1 To 10
+	  For i = 1 To 4    'Reduced to 4 from 10 iterations per scan made by second iteration in practice
 	    If InStr (1,PPPInfo(i),"dns: ",2) > 0 Then
 	      PPPInfo(i) = Replace (PPPInfo(i),"dns: ","")
 	      IPRoute(PPPInfo(i),1,1)
 	    EndIf
 	  Next i
 
+    CallTable FiveMin
+
   NextScan
 
-  SlowSequence
+  SlowSequence  '(2)
 
 '*****SENSOR_4 Soil Sensor Array*******************************
 '***Soil Sensor Array: 5 Soillima... SDI12 array in terminal block
@@ -452,8 +481,8 @@ Modem_Power=true ' turn modem on after compile
   NextScan
 
 
-  SlowSequence
-
+  SlowSequence '(3)
+    'Calls for Cameras, Modem Power recycle
 
 '*****SENSOR_9 Cameras*******************************
 '***3 Cameras to Monitor Site 2x per Day: D-Link 470x
@@ -476,7 +505,7 @@ Modem_Power=true ' turn modem on after compile
       Do
         makepic_N = HTTPGet ("http://admin:59812mc0@192.168.1.20/image/jpeg.cgi?profile=1","CRD:"&newfilename_N,"")  '
         n = n + 1
-      Loop While makepic_N = 0 AND n < 10
+      Loop While makepic_N = 0 AND n < 4
       If makepic_N > 0 Then
         makepic_N = n
         'FileCopy ("CRD:"&newfilename_N,"USR:"&newfilename_N)  'Transfer photo from CARD to URS drive
@@ -486,7 +515,7 @@ Modem_Power=true ' turn modem on after compile
       Do
         makepic_S = HTTPGet ("http://admin:59812mc0@192.168.1.30/image/jpeg.cgi?profile=1","CRD:"&newfilename_S,"")
         n = n + 1
-      Loop While makepic_S = 0 AND n < 10
+      Loop While makepic_S = 0 AND n < 4
       If makepic_S > 0 Then
         makepic_S = n
         'FileCopy ("CRD:"&newfilename_S,"USR:"&newfilename_S)
@@ -496,7 +525,7 @@ Modem_Power=true ' turn modem on after compile
       Do
         makepic_G = HTTPGet ("http://admin:59812mc0@192.168.1.40/image/jpeg.cgi?profile=1","CRD:"&newfilename_G,"")
         n = n + 1
-      Loop While makepic_G = 0 AND n < 10
+      Loop While makepic_G = 0 AND n < 4
       If makepic_G > 0 Then
         makepic_G = n
         'FileCopy ("CRD:"&newfilename_G,"USR:"&newfilename_G)
@@ -506,16 +535,35 @@ Modem_Power=true ' turn modem on after compile
 
     capturephotos = False
 
+'*********************** Cell Modem Reboot *************************************
+    If TimeIsBetween (2,3,1440,min) Then
+			Modem_Power=False
+		Else 
+			Modem_Power=True  
+		EndIf  
+		
+    If batt_volt < 11.4 Then 
+      Modem_Power=false
+    EndIf
+	
+    SW12(SW12_2,Modem_Power) 
+
+  NextScan
+
+  SlowSequence '(4) 
+    ' Calls for Snow Depth Sensor
+
 '*****SENSOR_5 Snow Depth*******************************
 '***Snow Depth Sensor: SR50A     SnowvUE - CONFIRM WHEN NEW SnowvUE RECEIvED
 '    Green:   C5      SDI-12 data  SDI_ADD: 1
     ' Logic to make 11 snow depth measurements, sort, store corrected values.
 
+  Scan (1,Min,3,0)
     If SR50A_Go Then
       For n = 1 To 11
-        SemaphoreGet (1) ' So as to avoid conflicts with other C5 devices in other sequences
+        SemaphoreGet (1) ' To avoid conflicts with other C5 devices in other sequences
           'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' & 'q'
-          SDI12Recorder(SR50A_Raw(),C5,"1","M1!",1,0,-1)
+          SDI12Recorder(SR50A_Raw(),C5,"1","C1!",1,0,-1)
         SemaphoreRelease (1)
 
         If SR50A_Raw(1) = "NAN" Then
@@ -542,22 +590,6 @@ Modem_Power=true ' turn modem on after compile
       snow_depth = Dist2Gnd - TCDT
     EndIf
 
-'*********************** Cell Modem Reboot *************************************
-    If TimeIsBetween (2,3,1440,min) Then
-			Modem_Power=False
-		Else 
-			Modem_Power=True  
-		EndIf  
-		
-    If batt_volt < 11.4 Then 
-      Modem_Power=false
-    EndIf
-	
-    SW12(SW12_2,Modem_Power) 
-
-'*********CALL DATA TABLES
-    'Call Data Tables and Store Data
-    CallTable FiveMin
     CallTable StatusReport
 
   NextScan
