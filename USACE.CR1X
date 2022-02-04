@@ -4,7 +4,7 @@
 'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
 
 'Attempt to eliminate SkippedScan errors in SlowSequence (3) SR50A
-  'Change sdi12recorder command to C! from M!
+  'Change sdi12recorder command to "C" from "M"
     'Line 566
 '211116 v7.4.1: Attempt improve performance of SlowSeq (1) - SDI12 on C5
   'Increase scan time to 60 sec from 20 sec
