@@ -393,4 +393,8 @@ Modem_Power=true ' turn modem on after compile
 '*****SENSOR_9 Cameras*******************************
     ' Camera Images: Occurs in Slow Sequence Below
     ' Trigger images @ 0900, 1500 Local time: 1500/2100 UTC or 1600/2200 UTC 
+<<<<<<< HEAD
     ' Turn on IP switch and cameras 5 minutes before photo ti
+=======
+    ' Turn on
+>>>>>>> 84b5373b109be4f920f364ae4c5c31fc49e4af67
