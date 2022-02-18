@@ -1,227 +1,136 @@
- 'USACE Standard Program: Task Order 1
-'Program author:  Kevin Hyde, MT Mesonet Manager, kevin.hyde@umontana.edu
-'Date:  210...'
-'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
+'USACE Bozeman Station - Unique Bozeman Station Program Build
+'     Based on USACE_v5.8.0
 
-'Attempt to eliminate SkippedScan errors in SlowSequence (3) SR50A
-  'Change sdi12recorder command to "C" from "M"
-    'Line 566
-'211116 v7.4.1: Attempt improve performance of SlowSeq (1) - SDI12 on C5
-  'Increase scan time to 60 sec from 20 sec
-    'Lines 412,414
-  'Change SDI12 command (SlowSeq (1)) to C! from M!
-    'Lines:421,439,444
-  'Change Main scan to 3 sec from 5 sec to restore WMO wind gust standard
-    ' Line 336 with cascade to Line 382 - Conditional SR50A start
-'211115 v7.4.0: Attempt to correct Skipped Scans - SlowSeq (3)
-  'Split SlowSequence '(3) Calls for Cameras, Modem Power recycle
-    'Line 474
-  'Added SlowSequence '(4) Calls for Snow Depth Sensor
-    'Line 543
-  'Revert main scan to 
-'211110 v7.3.0 > 7.3.1: First changes to address Skipped Scans and Records
+'220113 > c1.4.0
+  'Correct output units for Stevens HydraProbe
+      'to S m-1 from uS cm-1
+'211110 > v1.3.1
   'Change Main scan to 5 sec from 3 sec
-    ' Line 323 with cascade to Line 369 - Conditional SR50A start
-  'SlowSequence (1): Change scan rate to 20 seconds from 10 to address skipped scans 
-    'Line 401 with cascade to Line 410 - pyran multiplier
-  'Reduce camera call iterations to 4 from 10: Photos normally made by 1 or 2 tries
-    'Line 441, 492, 502, 512
-  'Move CallTable FiveMin to SlowSequence (1) from SlowSequence 3
-    'Line 448
-
-'211027 SR50A - Corrected temperature correction call on line 537
-'210929 v7.2.0
-  ' Restored code to drive SR50A
-  ' Checked against Bozeman code
+    ' Line 252 with cascade ti Line 297 - Conditional SR50A start
+  'SlowSequence (1): Line 332
+    'Change scan rate to 20 seconds from 10 to address skipped scans
+    'Adjust pyran multiplier Line 
+'Removed FMO table calls
 '210903: Corrected fieldnames in tables
   'Restored elevation on air temp
-  'Synchcronizing variables across all stations including Bozeman
-'7.0.4 21...
-'    Reorder variables --> Modem_Power appears first
-'v7.0.3 210624
-'    Change pyranometer multiplier to 10 from 5 (scanrate) Line 
-'v7.0.2 210624
-'    Move HygroVUE code inside of SlowScan with other C5 sensors
-'v7.0.1 210624
-'    Null out code to bypass air-temp_200 problem
-'      Lines 126-127, 334-38
-'    Add semaphoreget - release to control for multiple devices on C5
-'v7.0.0 210623
-'   Comment out snow depth code, leaving public variables
-'   Assigned null values "-99" to depth and q
-'   Added code to bypass air_temp_200 = "NAN" problem 
+  'Synchcronizing varialbes across all stations
+'210817: Dropped elevations on rh, air_temp, ppt, bp
+  'changed "fieldnames" calls to drop _Ave, _Tot, etc.
+'Kevin Hyde  210810
+'     Standardize units names per MCO database needs
 
-'v6.1.2 210603 - Completed change to lowercase
-'v6.1.1
-'Modified 210602
-'Editted attribute names > all lowercase
-' MODIFIED 210528
-'  Add script to cycle modem power daily
-
-'****************************************************************************
-'***********WIRING DIAGRAM******************
-'
-'  Modem power 
-'    Ground:  Black
-'    12v:     Red (Rv50)
-'    SW2:     White (Rv50)
-'
 '*****SENSOR_1 Open Door Sensor*******************************
 '***Door Switch  
 '    White    C1
-'    White    5v
-'
-'*****SENSOR_2 Wind Monitor*******************************
-'***Wind Monitor: RM Young 9106 - Based on Analog voltage output, not RS485
-'      current "leak" results in non-0 WS value 
-'    Red:     12v     12v power      PWR
-'    White:   AG      Signal G       REF	
-'    Clear:   AG      Signal G	     REF
-'    Green:   SE13    WD Signal	     A
-'    Brown    SE14    WS Signal      B
-'    Black    G       Power ground   EARTH
-'
-'*****SENSOR_3 Barometer**********************************
-'***Barometer: CS100
-'    Blue:    SE2     Signal H
-'    Yellow:  AG      Signal G
-'    Clear:   AG      Signal G
-'    Red:     12v     12v power
-'    Black:   G       Power ground
-'    Green:   C2      Control
-'
-'*****SENSOR_4 Soil Sensor Array*******************************
-'***Soil Sensor Array: 5 Acclima... SDI12 array in terminal block
-'    Blue:    C3      SDI-12 data  SDI_ADD: 1-5
-'    Red:     12v     12v power
-'    White:   G       Ground
-'
-'*********SHARING TERMINAL BLOCK C5
-'*****SENSOR_5 Snow Depth*******************************
-'***Snow Depth Sensor: SR50A    (SnowvUE - CONFIRM WHEN NEW SnowVUE Revieved)
-'    Green:   C5      SDI-12 data  SDI_ADD: 1
-'    Red:     12v     12v power
-'    Black:   G       Power ground
-'    White:   AG      White
-'    Clear:   AG      Clear
-'
-'*****SENSOR_6 Pluviometer*******************************
-'***Pluviometer: HydroMet PluvioII ****ADD HEATER
-'    Green:  	C5:     SDI-12 data  SDI_ADD: 2
-'    White:  	G:      Data ground
-'    Yellow: 	12v:    12v power
-'    Brown:  	G:      Power ground
-'    ***Red:   24v:   	  24v power
-'    ***Black:   G:  	Power ground
-'
-'*****SENSOR_7 Pyranometer*******************************
-'***Pyranometer: CS320
-'    White:  	C5      SDI-12 data  SDI_ADD: 3
-'    Clear:  	AG      Signal G
-'    Blue:  	AG      Signal G
-'    Red:    	12v     12v Power
-'    Black:  	G       Power G
-'
-'*****SENSOR_8 RH-temp*******************************
-'***RH-temp Sensor: HygrovUE10
-'    White:   C5      SDI-12 data  SDI_ADD: 4
-'    Brown: 	12v     12v Power
-'    Black:  	G       Power	G
-'    Clear:   AG	    Shield G
-'
-'*****SENSOR_9 Cameras*******************************
-'***3 Cameras to Monitor Site 2x per Day: D-Link 470x
-'    Cat5 Pigtail  Ethernet Port to POE Switch
-'    Red:    SW1  POE Power
-'    Black:  G    POE Ground
-'    Camera Password:  59812mc0
+'    White    5V
+'NOT YET INSTALLED
 
+'Declare Variables and Units
 
-'****************************************************************************
-'********DECLARE vARIABLES AND UNITS*****************************************
+Dim TS100SS_Duty_Cycle  'Unique to Bozeman Station
+Dim AirDewDif
+Dim Htr
 
-Dim AirDewDif  'Used with pyranometer
-Dim Htr        'Used with pyranometer
-
-Public Modem_Power As Boolean      'used to powercycle modem
-'variable group to drive Cameras
-Public Camera_Power As Boolean   'Set = true - manually power cameras
-Public capturephotos As Boolean  'Set = true - manually initiate image capture
-
-'TCP socket number: if = 0, unsuccesful; >0 = successful
-Public makepic_N        'Camera N - faces North
-Public makepic_S        'Camera S - faces South
-Public makepic_G        'Camera G - faces ground into center of tri-leg tower
-Public batt_volt        : Units batt_volt=v
-Public panel_temp       : Units panel_temp=deg C
+'Variable group to drive Cameras
+Public Camera_Power As Boolean
+Public Make_Photos As Boolean
+Public makepic_N              'Camera A This is TCP socket number: if = 0, unsuccesful; >0 = successful
+Public makepic_S              'Camera B This is TCP socket number: if = 0, unsuccesful; >0 = successful
+Public makepic_G              'Camera C - Bozeman Mast from nadir
+Public batt_volt            : Units batt_volt=v
+Public panel_temp          : Units panel_temp=deg C
 Public door             'Door open indicator
-Public bp               : Units bp=kPa
-Public wind_spd_1000    : Units wind_spd_1000=m s-1
-Public wind_dir_1000    : Units wind_dir_1000=arcdeg
-Public dew_point        : Units dew_point= deg C
-Public snow_depth       : Units snow_depth= cm
-Public snow_depth_q      'Final quality number - non-dimensional
-
-'HygrovUE10 CSI HR temp sensor
-Public rhtemp(2)
-Alias rhtemp(1)=air_temp_0200  :Units air_temp_0200=deg C
-Alias rhtemp(2)=rh        :Units rh = %
+Public bp           : Units bp=kPa
+Public TS100SS_Fan_RPM  : Units TS100SS_Fan_RPM=RPM  'Unigue to Bozeman
+Public wind_spd_1000            : Units wind_spd_1000=m s-1
+Public wind_dir_1000          : Units wind_dir_1000=arcdeg
+Public dew_point           : Units dew_point= deg C
+Public snow_depth : Units snow_depth = cm 'Snow depth
+Public snow_depth_Q          : 'Final Quality number
 
 'Apogee Pyranometer SDI12 outputs
-Public pyran(6)    
-Alias pyran(1)=sol_rad          : Units sol_rad=W m-2
-Alias pyran(2)=raw_mv           : Units raw_mv=mv
-Alias pyran(3)=pyran_temp       : Units pyran_temp=deg C
-Alias pyran(4)=pyran_x_axis     : Units pyran_x_axis =arcdeg
-Alias pyran(5)=pyran_y_axis     : Units pyran_y_axis =arcdeg
-Alias pyran(6)=pyran_z_axis     : Units pyran_z_axis =arcdeg
-Public sol_rad_mj               : Units sol_rad_mj=mj m-2
+Public pyran(6)    'Apogee pyranometer
+Alias pyran(1)=sol_rad       : Units sol_rad=W m-2
+Alias pyran(2)=raw_mV        : Units raw_mV=mv
+Alias pyran(3)=pyran_temp    : Units pyran_temp=deg C
+Alias pyran(4)=pyran_x_axis  : Units pyran_x_axis =arcdeg
+Alias pyran(5)=pyran_y_axis  : Units pyran_y_axis =arcdeg
+Alias pyran(6)=pyran_z_axis  : Units pyran_z_axis =arcdeg
+Public sol_rad_MJ            : Units sol_rad_MJ=mj m-2
 Public HtrCtrl As Boolean
 
-'Alias group for Pluvio - Pp 29-30 OTT Pluvio Manual
-Public Pluvio(9)  'for use with Pluvio2
-Alias Pluvio(1)=ppt_max_rate        : Units ppt_max_rate =mm hr-1 'extreme rainfall intensity
-Alias Pluvio(2)=ppt                 : Units ppt=mm    'accu RT-NRT
-Alias Pluvio(3)=pluv_accuNRT        : Units pluv_accuNRT=mm      'accu NRT
-Alias Pluvio(4)=pluv_accuTtlNRT     : Units pluv_accuTtlNRT =mm   'accu total NRT
-Alias Pluvio(5)=pluv_fill           : Units pluv_fill=mm     'Bucket RT
-Alias Pluvio(6)=pluv_bucketNRT      : Units pluv_bucketNRT =mm   'Bucket NRT
-Alias Pluvio(7)=pluv_temp           : Units pluv_temp=deg C  'Load cell T
-Alias Pluvio(8)=pluv_heater         : Units pluv_heater=code   'Rim heater status
-Alias Pluvio(9)=pluv_gagestat       : Units pluv_gagestat=code  'Gauge status
+'Viasala - Unique to Bozeman
+Public air_temp_0200         : Units air_temp_0200 = deg C
+Public rh               : Units rh=%  
+'Apogee 10m temp - Unique to Bozeman
+Public ST110_C     
 
-'Acclima TDR315N/310N - new version 2021 April
-'Check vwc output - convert from % to m3 m-3 as needed
-Public soil_1(5)
-Public soil_2(5)
-Public soil_3(5)
-Public soil_4(5)
-Public soil_5(5)
-Alias soil_1(1)=soil_vwc_0005      	:Units soil_vwc_0005=m3 m-3
-Alias soil_1(2)=soil_temp_0005  	  :Units soil_temp_0005=deg C
-Alias soil_1(3)=soil_perm_0005	    ':Units soil_perm_0005=na
-Alias soil_1(4)=soil_ec_blk_0005   :Units soil_ec_blk_0005=uS cm-1
-Alias soil_1(5)=soil_ec_por_0005	  :Units soil_ec_por_0005=uS cm-1
-Alias soil_2(1)=soil_vwc_0010      	:Units soil_vwc_0010=m3 m-3
-Alias soil_2(2)=soil_temp_0010      :Units soil_temp_0010=deg C
-Alias soil_2(3)=soil_perm_0010	    ':Units soil_perm_0010=na
-Alias soil_2(4)=soil_ec_blk_0010   :Units soil_ec_blk_0010=uS cm-1
-Alias soil_2(5)=soil_ec_por_0010   :Units soil_ec_por_0010=uS cm-1
-Alias soil_3(1)=soil_vwc_0020      	:Units soil_vwc_0020=m3 m-3
-Alias soil_3(2)=soil_temp_0020     	:Units soil_temp_0020=deg C
-Alias soil_3(3)=soil_perm_0020	    ':Units soil_perm_0020=na
-Alias soil_3(4)=soil_ec_blk_0020   :Units soil_ec_blk_0020=uS cm-1
-Alias soil_3(5)=soil_ec_por_0020	  :Units soil_ec_por_0020=uS cm-1
-Alias soil_4(1)=soil_vwc_0050  	    :Units soil_vwc_0050=m3 m-3
-Alias soil_4(2)=soil_temp_0050      :Units soil_temp_0050=deg C
-Alias soil_4(3)=soil_perm_0050	    ':Units soil_perm_0050=na
-Alias soil_4(4)=soil_ec_blk_0050   :Units soil_ec_blk_0050=uS cm-1
-Alias soil_4(5)=soil_ec_por_0050	  :Units soil_ec_por_0050=uS cm-1
-Alias soil_5(1)=soil_vwc_0100  	    :Units soil_vwc_0100=m3 m-3
-Alias soil_5(2)=soil_temp_0100     	:Units soil_temp_0100=deg C
-Alias soil_5(3)=soil_perm_0100	    ':Units soil_perm_0100=na
-Alias soil_5(4)=soil_ec_blk_0100   :Units soil_ec_blk_0100=uS cm-1
-Alias soil_5(5)=soil_ec_por_0100	  :Units soil_ec_por_0100=uS cm-1
+'Alias group for Pluvio - Pp 29-30 OTT Pluvio Manual
+Public Pluvio(9)
+Alias Pluvio(1)=ppt_max_rate     : Units ppt_max_rate=mm hr-1 'rainfall intensity
+Alias Pluvio(2)=ppt              : Units ppt=mm    'Accu RT-NRT
+Alias Pluvio(3)=pluv_AccuNRT          : Units pluv_AccuNRT=mm      'Accu NRT
+Alias Pluvio(4)=pluv_AccuTtlNRT       : Units pluv_AccuTtlNRT=mm   'Accu total NRT
+Alias Pluvio(5)=pluv_fill             : Units pluv_fill=mm     'Bucket RT
+Alias Pluvio(6)=pluv_BucketNRT        : Units pluv_BucketNRT =mm   'Bucket NRT
+Alias Pluvio(7)=pluv_temp             : Units pluv_temp= deg C  'Load cell T
+Alias Pluvio(8)=pluv_heater           : Units pluv_heater=code   'Rim heater status
+Alias Pluvio(9)=pluv_gagestat         : Units pluv_gagestat=code  'Gauge status
+
+
+'For use with Stevens Hydraprobes
+Public Soil_1(9)  
+Public Soil_2(9)
+Public Soil_3(9)
+Public Soil_4(9)
+Public Soil_5(9)
+
+'Alias group for Stevens Hydraprobes - some lines not needed
+Alias Soil_1(1)=Soil_VWC_0005         : Units Soil_VWC_0005=m3 m-3
+Alias Soil_1(2)=Soil_ECsoilb_0005     : Units Soil_ECsoilb_0005=S m-1
+Alias Soil_1(3)=Soil_Temp_0005        : Units Soil_Temp_0005=deg C
+Alias Soil_1(4)=Soil_TF_0005          : Units Soil_TF_0005=deg F
+Alias Soil_1(5)=Cond_RAW_0005         : Units Cond_RAW_0005=S m-1
+Alias Soil_1(6)=RDPerm_0005           ': Units RDPerm_0005=nonD
+Alias Soil_1(7)=IDPerm_0005           ': Units IDPerm_0005=nonD
+Alias Soil_1(8)=Soil_Perm_0005        ': Units Soil_Perm_0005=nonD
+Alias Soil_1(9)=IDPerm_Tcor_0005      ': Units IDPerm_Tcor_0005=nonD
+Alias Soil_2(1)=Soil_VWC_0010         : Units Soil_VWC_0010=m3 m-3
+Alias Soil_2(2)=Soil_ECsoilb_0010     : Units Soil_ECsoilb_0010=S m-1
+Alias Soil_2(3)=Soil_Temp_0010        : Units Soil_Temp_0010= deg C
+Alias Soil_2(4)=Soil_TF_0010          : Units Soil_TF_0010= deg F
+Alias Soil_2(5)=Cond_RAW_0010         : Units Cond_RAW_0010=S m-1
+Alias Soil_2(6)=RDPerm_0010           ': Units RDPerm_0010=nonD
+Alias Soil_2(7)=IDPerm_0010           ': Units IDPerm_0010=nonD
+Alias Soil_2(8)=Soil_Perm_0010        ': Units Soil_Perm_0010=nonD
+Alias Soil_2(9)=IDPerm_Tcor_0010      ': Units IDPerm_Tcor_0010=nonD
+Alias Soil_3(1)=Soil_VWC_0020             : Units Soil_VWC_0020=m3 m-3
+Alias Soil_3(2)=Soil_ECsoilb_0020     : Units Soil_ECsoilb_0020=S m-1
+Alias Soil_3(3)=Soil_Temp_0020       : Units Soil_Temp_0020=deg C
+Alias Soil_3(4)=Soil_TF_0020         : Units Soil_TF_0020=deg F
+Alias Soil_3(5)=Cond_RAW_0020        : Units Cond_RAW_0020=S m-1
+Alias Soil_3(6)=RDPerm_0020          ': Units RDPerm_0020=nonD
+Alias Soil_3(7)=IDPerm_0020          ': Units IDPerm_0020=nonD
+Alias Soil_3(8)=Soil_Perm_0020     ': Units Soil_Perm_0020=nonD
+Alias Soil_3(9)=IDPerm_Tcor_0020     ': Units IDPerm_Tcor_0020=nonD
+Alias Soil_4(1)=Soil_VWC_0050             : Units Soil_VWC_0050=m3 m-3
+Alias Soil_4(2)=Soil_ECsoilb_0050     : Units Soil_ECsoilb_0050=S m-1
+Alias Soil_4(3)=Soil_Temp_0050       : Units Soil_Temp_0050=deg C
+Alias Soil_4(4)=Soil_TF_0050         : Units Soil_TF_0050=deg F
+Alias Soil_4(5)=Cond_RAW_0050        : Units Cond_RAW_0050=S m-1
+Alias Soil_4(6)=RDPerm_0050          ': Units RDPerm_0050=nonD
+Alias Soil_4(7)=IDPerm_0050          ': Units IDPerm_0050=nonD
+Alias Soil_4(8)=Soil_Perm_0050     ': Units Soil_Perm_0050=nonD
+Alias Soil_4(9)=IDPerm_Tcor_0050     ': Units IDPerm_Tcor_0050=nonD
+Alias Soil_5(1)=Soil_VWC_0100            : Units Soil_VWC_0100=m3 m-3
+Alias Soil_5(2)=Soil_ECsoilb_0100    : Units Soil_ECsoilb_0100=S m-1
+Alias Soil_5(3)=Soil_Temp_0100      : Units Soil_Temp_0100=deg C
+Alias Soil_5(4)=Soil_TF_0100        : Units Soil_TF_0100=deg F
+Alias Soil_5(5)=Cond_RAW_0100       : Units Cond_RAW_0100=S m-1
+Alias Soil_5(6)=RDPerm_0100         ': Units RDPerm_0100=nonD
+Alias Soil_5(7)=IDPerm_0100         ': Units IDPerm_0100=nonD
+Alias Soil_5(8)=Soil_Perm_0100    ': Units Soil_Perm_0100=nonD
+Alias Soil_5(9)=IDPerm_Tcor_0100    ': Units IDPerm_Tcor_0100=nonD
 
 'Code to add timedate stamp to photos
 Dim rTime(9) As Long          'declare as public and dimension rTime to 9
@@ -234,71 +143,69 @@ Alias rTime(6) = Second       'assign the alias Second to rTime(6)
 Alias rTime(7) = uSecond      'assign the alias uSecond to rTime(7)
 Alias rTime(8) = WeekDay      'assign the alias WeekDay to rTime(8)
 Alias rTime(9) = Day_of_Year  'assign the alias Day_of_Year to rTime(9)
-Dim newfilename_N As String *25
+Dim newfilename_N As String *25  'declares photo naming variable - non-public
 Dim newfilename_S As String *25
-Dim newfilename_G As String *25
+Dim newfilename_G As String *25  
 Dim DST As Long
 Dim i, PPPInfo(10) As String * 70
 
-'Related to SR50A Snow Depth measurement (SnowVUE)
+' Related to SR50A Snow Depth measurement
+Public SR50A_Raw(2)       ' holds raw values as they are read from SR50A
+Alias SR50A_Raw(1) = DT   : Units DT = m 'Distance from the SR50A to target
+Alias SR50A_Raw(2) = RawQ                'Quality number.
+Public SR50A(11,2)        ' Array to hold 11 unsorted SR50A measurements
+Public Result_SR50A(11,2) ' Sorted array of 11 SR50A measurements, smallest to largest
+Public TCDT       : Units TCDT = cm 'Final Temperature corrected distance
+Public Dist2Gnd   : Units Dist2Gnd = cm 'Distance to ground
+Public SR50A_Go As Boolean ' When true, runs the SR50A measurement cycle
+Public Set_D2G As Boolean ' When true, sets the SR50 distance to ground
 Dim n 'used as a counter
 Dim FH As Long ' File Handle
 Dim dummystr As String
-Public SR50A_Raw(2)       ' holds raw values as they are read from SR50A
-Alias SR50A_Raw(1) = Dist2Targ   : Units Dist2Targ = m 'Distance from the SR50A to target
-Alias SR50A_Raw(2) = Rawq                'Measurement quality number.
-Public SR50A_Go As Boolean ' When true, runs the SR50A measurement cycle
-Public Set_D2G As Boolean ' When true, sets the SR50 distance to ground
-Public TCDT       : Units TCDT = cm 'Final temperature corrected distance
-Public Dist2Gnd   : Units Dist2Gnd = cm 'Distance to ground
-Public SR50A(11,2)        ' Array to hold 11 unsorted SR50A measurements
-Public Result_SR50A(11,2) ' Sorted array of 11 SR50A measurements, smallest to largest
-
-Preservevariables
 
 '*********DEFINE DATA TABLES*************************************************
-'Data seq: air temp, max, min; 
+
 DataTable(FiveMin,True,-1)
   DataInterval(0,5,Min,10)
   CardOut (0,-1 )
   Average(1,air_temp_0200,FP2,False)  :FieldNames ("air_temp_0200")
   Maximum (1,air_temp_0200,FP2,0,1) :FieldNames ("air_temp_0200_max")
   Minimum (1,air_temp_0200,FP2,0,1)  :FieldNames ("air_temp_0200_min")
-  Average(1,rh,FP2,False)       :FieldNames ("rh")
-  Average(1,bp,IEEE4,False)     :FieldNames ("bp")
-  Average(1,sol_rad,FP2,False)       :FieldNames ("sol_rad")
+  Average(1,rh,FP2,False)  :FieldNames ("rh")
+  Average(1,bp,IEEE4,False)  :FieldNames ("bp")
+  Average(1,sol_rad,FP2,False)  :FieldNames ("sol_rad")
   WindVector(1,wind_spd_1000,wind_dir_1000,FP2,False,0,0,0)
   FieldNames("wind_spd_1000,wind_dir_1000,wind_dir_sd_1000")
-  Maximum(1,wind_spd_1000,FP2,False,False):FieldNames ("windgust_1000")
-  Totalize(1,ppt,FP2,False)          :FieldNames ("ppt")
-  Average(1,ppt_max_rate,FP2,False)  :FieldNames ("ppt_max_rate")
+  Maximum(1,wind_spd_1000,FP2,False,False)  :FieldNames ("windgust_1000")
+  Totalize(1,ppt,FP2,False) :FieldNames ("ppt")
+  Average(1,ppt_max_rate,FP2,False)  :Fieldnames ("ppt_max_rate")
   Sample(1,snow_depth,FP2)                :FieldNames ("snow_depth")
-  Sample(1,snow_depth_q,FP2)              :FieldNames ("snow_depth_q")
-  Average(1,soil_vwc_0005*.01,FP2,False)  :FieldNames ("soil_vwc_0005")
-  Average(1,soil_vwc_0010*.01,FP2,False)  :FieldNames ("soil_vwc_0010")
-  Average(1,soil_vwc_0020*.01,FP2,False)  :FieldNames ("soil_vwc_0020")
-  Average(1,soil_vwc_0050*.01,FP2,False)  :FieldNames ("soil_vwc_0050")
-  Average(1,soil_vwc_0100*.01,FP2,False)  :FieldNames ("soil_vwc_0100")
-  Average(1,soil_temp_0005,FP2,False)     :FieldNames ("soil_temp_0005")
-  Average(1,soil_temp_0010,FP2,False)     :FieldNames ("soil_temp_0010")
-  Average(1,soil_temp_0020,FP2,False)     :FieldNames ("soil_temp_0020")
-  Average(1,soil_temp_0050,FP2,False)     :FieldNames ("soil_temp_0050")
-  Average(1,soil_temp_0100,FP2,False)     :FieldNames ("soil_temp_0100")
-  Average(1,soil_ec_blk_0005,FP2,False)   :FieldNames ("soil_ec_blk_0005")
-  Average(1,soil_ec_blk_0010,FP2,False)   :FieldNames ("soil_ec_blk_0010")
-  Average(1,soil_ec_blk_0020,FP2,False)   :FieldNames ("soil_ec_blk_0020")
-  Average(1,soil_ec_blk_0050,FP2,False)   :FieldNames ("soil_ec_blk_0050")
-  Average(1,soil_ec_blk_0100,FP2,False)   :FieldNames ("soil_ec_blk_0100")
-  Average(1,soil_ec_por_0005,FP2,False)   :FieldNames ("soil_ec_por_0005")
-  Average(1,soil_ec_por_0010,FP2,False)   :FieldNames ("soil_ec_por_0010")
-  Average(1,soil_ec_por_0020,FP2,False)   :FieldNames ("soil_ec_por_0020")
-  Average(1,soil_ec_por_0050,FP2,False)   :FieldNames ("soil_ec_por_0050")
-  Average(1,soil_ec_por_0100,FP2,False)   :FieldNames ("soil_ec_por_0100")
-  Average(1,soil_perm_0005,FP2,False)     :FieldNames ("soil_ec_perm_0005")
-  Average(1,soil_perm_0010,FP2,False)     :FieldNames ("soil_ec_perm_0010")
-  Average(1,soil_perm_0020,FP2,False)     :FieldNames ("soil_ec_perm_0020")
-  Average(1,soil_perm_0050,FP2,False)     :FieldNames ("soil_ec_perm_0050")
-  Average(1,soil_perm_0100,FP2,False)     :FieldNames ("soil_ec_perm_0100")
+  Sample(1,snow_depth_Q,FP2)              :FieldNames ("snow_depth_q")
+  Average(1,Soil_VWC_0005,FP2,False)  :FieldNames ("soil_vwc_0005")
+  Average(1,Soil_VWC_0010,FP2,False)  :FieldNames ("soil_vwc_0010")
+  Average(1,Soil_VWC_0020,FP2,False)  :FieldNames ("soil_vwc_0020")
+  Average(1,Soil_VWC_0050,FP2,False)  :FieldNames ("soil_vwc_0050")
+  Average(1,Soil_VWC_0100,FP2,False)  :FieldNames ("soil_vwc_0100")
+  Average(1,Soil_Temp_0005,FP2,False)  :FieldNames ("soil_temp_0005")
+  Average(1,Soil_Temp_0010,FP2,False)  :FieldNames ("soil_temp_0010")
+  Average(1,Soil_Temp_0020,FP2,False)  :FieldNames ("soil_temp_0020")
+  Average(1,Soil_Temp_0050,FP2,False)  :FieldNames ("soil_temp_0050")
+  Average(1,Soil_Temp_0100,FP2,False)  :FieldNames ("soil_temp_0100")
+  Average(1,Soil_ECsoilb_0005,FP2,False)  :FieldNames ("soil_ec_blk_0005")
+  Average(1,Soil_ECsoilb_0010,FP2,False)  :FieldNames ("soil_ec_blk_0010")
+  Average(1,Soil_ECsoilb_0020,FP2,False)  :FieldNames ("soil_ec_blk_0020")
+  Average(1,Soil_ECsoilb_0050,FP2,False)  :FieldNames ("soil_ec_blk_0050")
+  Average(1,Soil_ECsoilb_0100,FP2,False)  :FieldNames ("soil_ec_blk_0100")
+'  Average(1,Soil_ECsoilp_0005,FP2,False)
+'  Average(1,Soil_ECsoilp_0010,FP2,False)
+'  Average(1,Soil_ECsoilp_0020,FP2,False)
+'  Average(1,Soil_ECsoilp_0050,FP2,False)
+'  Average(1,Soil_ECsoilp_0100,FP2,False)
+  Average(1,Soil_Perm_0005,FP2,False)  :FieldNames ("soil_perm_0005")
+  Average(1,Soil_Perm_0010,FP2,False)  :FieldNames ("soil_perm_0010")
+  Average(1,Soil_Perm_0020,FP2,False)  :FieldNames ("soil_perm_0020")
+  Average(1,Soil_Perm_0050,FP2,False)  :FieldNames ("soil_perm_0050")
+  Average(1,Soil_Perm_0100,FP2,False)  :FieldNames ("soil_perm_0100")
 EndTable
 
 DataTable(StatusReport,True,-1)
@@ -313,76 +220,84 @@ DataTable(StatusReport,True,-1)
   Sample(1,pyran_x_axis,FP2,False)
   Sample(1,pyran_y_axis,FP2,False)
   Sample(1,pyran_z_axis,FP2,False)
-  Sample(1,door,FP2,False)
+  Sample (1,door,FP2,False)
 EndTable
-'****************************************************************************
-'*********INITIATE PROGRAM
+'Status Table Added
 
+'Five Minute Table replaced
+
+'Hourly Table deleted
+
+'Daily Table deleted
+
+PreserveVariables
+
+'Main Program
 BeginProg
 
-Modem_Power=true ' turn modem on after compile   
-
-  ' Initialize Snow Depth Distance to Target: Default value varies by Station
-  ' Use Set_D2G to rezero 
+  ' For Snow Depth: 
+  ' Initialize distance to ground by reading the value out of
+  ' a file on the USR drive.  This file gets written to whenever Set_D2G
+  ' is set true.  If this file doesn't exist, which might happen if the
+  ' USR drive size is changed or reformatted, or if the file is otherwise
+  ' somehow deleted, then set Dist2Gnd to 188.7 cm.
+  
   If FileSize ("USR:Dist2Gnd.txt") > 0 Then
     FH = FileOpen ("USR:Dist2Gnd.txt","r",0)
     FileRead (FH,dummystr,10)
     SplitStr (Dist2Gnd,dummystr,"",1,0)
     FileClose (FH)
   Else
-    Dist2Gnd = 188.7  'Default offset Revisit WHEN SnowVUE INSTALLED
+    Dist2Gnd = 188.7  'Default offset until Dist2Grd changed by Set_D2G=true
   EndIf
 
-    'snow_depth = -99  'Value placeholder when instrument not installed
-    'snow_depth_q = -99  
-'*********MAIN SCAN********************************************************** 
-  Scan(3,Sec,1,0) 'Changed to 3 sec from 5 sec scan to restore WMO standard for wind gusts
+  'Main Scan
+  Scan(5,Sec,1,0) 'Changed to 5 sec from 3 second scan 211110 to relax scan load
+    'Default CR1000X Datalogger Battery Voltage measurement 'batt_volt'
     Battery(batt_volt)
+    'Default CR1000X Datalogger Wiring Panel Temperature measurement 'panel_temp'
     PanelTemp(panel_temp,60)
+    'ST110Thermistor Temperature Probe measurement 'Temp_C'
+    Therm109(ST110_C,1,1,VX1,0,60,1,0)
 
-'**********SENSOR_1 Open Door sensor**********
+'**********SENSOR_1 Open Door sensor********** NOT YET INSTALLED
     'Black--5v; Black--C1
     '0=Low=closed, 1=high=open
     If CheckPort(C1) = True Then
-      Door = 0
+      door = 0
     Else
       Door = 1
     EndIf
     
     'door = door * Interval
 
-'**********SENSOR_2 Wind monitor**********
-'    Red:   P1      WS Signal	
-'    Green: 4H SE7    WD Signal	
-'    Brown: 4L SE8     WD Excitation
+    'RMYoung 09101-SE (MODBUS RS-485 at 9600 baud) Wind Monitor measurements (Nathan)
+    VoltSe(wind_spd_1000,1,mV5000,13,0,0,15000,0.020,0)  'Wind speed
+    VoltSe(wind_dir_1000,1,mV5000,14,0,0,15000,0.108,0)  'Wind direction
+    If wind_dir_1000>360 Then wind_dir_1000=wind_dir_1000-360  ' Wind directin correction
 
-'RMYoung 09101-SE (MODBUS RS-485 at 9600 baud) Wind Monitor measurements
-    voltSe(wind_spd_1000,1,mv5000,13,0,0,15000,0.020,0)
-    voltSe(wind_dir_1000,1,mv5000,14,0,0,15000,0.108,0)
-    If wind_dir_1000>360 Then wind_dir_1000=wind_dir_1000-360
-    'AvgRun(WindSpd3s,1,WindSpd1s,3)
+    'HMP155 (constant power) Temperature & Relative Humidity Sensor measurements 'air_temp_0200_0200' and 'rh_0200'
+    VoltSe(air_temp_0200,1,mV1000,4,False,0,60,0.14,-80)
+    VoltSe(rh,1,mV1000,5,False,0,60,0.1,0)
+    If rh>100 AND rh<108 Then rh=100
 
-'*****SENSOR_3 Barometer**********************************
-'CS100 Barometric Pressure Sensor measurement 'bp_150'
-'    Blue:    1L SE2     Signal H
-'    Green:   C2      Control
+    'Measure TS100SS Aspirated Radiation Shield fan speed 'TS100SS_Fan_RPM'
+    PulseCount(TS100SS_Fan_RPM,1,P2,3,1,30,0)
+
+    'CS100 Barometric Pressure Sensor measurement 'bp_0150'
     PortSet(C2,1)
-    VoltSe(bp,1,mv5000,2,True,0,60,0.2,600)
+    VoltSe(bp,1,mV5000,6,True,0,60,0.2,600)
     bp=bp*0.1
 
-'*****SENSOR_5 Snow Depth*******************************
-'***Snow Depth Sensor: SnowvUE - CONFIRM WHEN NEW SnowvUE RECEIvED
-'    Green:   C5      SDI-12 data  SDI_ADD: 1
-
     ' ************************************
-    ' * SR50A Snow Depth (Occurs in Slow Sequence)
+    ' * SR50A Snow Depth (Occurs in Slow SeQuence)
     ' ************************************
 
     ' The SR50A trigger variable "SR50A_Go" is set true at :04, :11, :14, etc.
-    ' to run the measurement sequence right before the 5-minute record is 
+    ' to run the measurement seQuence right before the 5-minute record is 
     ' written. This can be set to true manually if desired.
 
-    If IfTime(237,300,Sec) Then SR50A_Go = True ' at 03 min 57 sec into 5-min period
+    If IfTime(235,300,Sec) Then SR50A_Go = True ' at 03 min 55 sec into 5-min period
 
     ' When the ground is clear of snow and debris, the SR50A can be "zeroed out",
     ' sort of speak, by setting "Set_D2G" true.  This will trigger a measurement
@@ -390,186 +305,183 @@ Modem_Power=true ' turn modem on after compile
 
     If Set_D2G Then SR50A_Go = True
 
-'*****SENSOR_9 Cameras*******************************
-    ' Camera Images: Occurs in Slow Sequence Below
-    ' Trigger images @ 0900, 1500 Local time: 1500/2100 UTC or 1600/2200 UTC 
+    ' ************************************
+    ' * Camera Images (Images executed in Slow SeQuence)
+    ' ************************************
+
+    ' Logic for triggering camera images at 0900 and 1500 Local time.
+    ' Since logger time is UTC all year long, trigger happens at either
+    ' 1500/2100 UTC or 1600/2200 UTC based on whether we are observing DST
+
     ' Turn on IP switch and cameras 5 minutes before photo time and
-    ' turn off ip 5 minutes after photo time
+    ' turn off 5 minutes after photo time
 
     DST = DaylightSavingUS(0) ' returns 3600 during Daylight time, 0 during Standard time
-    DST = DST / 60 ' equals 60 (minutes) during Daylight time, 0 during Standard time
+    DST = DST / 60 ' eQuals 60 (minutes) during Daylight time, 0 during Standard time
 
     If IfTime (955-DST,1440,Min) Then Camera_Power = true
-    If IfTime (960-DST,1440,Min) Then capturephotos = true
+    If IfTime (960-DST,1440,Min) Then Make_Photos = true
     If IfTime (965-DST,1440,Min) Then Camera_Power = false
     If IfTime (1315-DST,1440,Min) Then Camera_Power = true
-    If IfTime (1320-DST,1440,Min) Then capturephotos = true
+    If IfTime (1320-DST,1440,Min) Then Make_Photos = true
     If IfTime (1325-DST,1440,Min) Then Camera_Power = false
 
     SW12 (SW12_1,Camera_Power)
-    
+
   NextScan
 
-'  **************************************************************************
-'  Group of SDI12Recorder calls on C5
-  SlowSequence '(1)
+  SlowSequence  '(1): 
 
-  Scan (60,Sec,5,0)         'Increase to 60 sec from 20 to expand time for SDI12 response
+  Scan (20,Sec,3,0)         '211110 Increased to 20 sec scan from 10 second to address skipped scans
 
-    SemaphoreGet (1) ' To avoid conflicts with other C5 devices in other sequences
+    SemaphoreGet (1) ' So as to avoid conflicts with other C3 devices in other seQuences
 
-  '*****SENSOR_7 Pyranometer*******************************
-  '***Pyranometer: CS320
-  '    White:  	C5      SDI-12 data  SDI_ADD 3
-    SDI12Recorder(pyran(),C5,"3","C4!",1,0,-1)
-    'Calculate total flux: multiplier based on SlowSequence scan rate of 20 Seconds
-    sol_rad_mj=sol_rad*20E-06
+    'CS320 Digital Thermopile Pyranometer measurements 'sol_rad', 'Raw_mV', 'pyran_Temp', 'pyran_x_axis', 'pyran_y_axis', and 'pyran_z_axis'
+    SDI12Recorder(pyran(),C3,"2","M4!",1,0,-1)
+    'Calculate total flux
+    'The original multiplier to calculate total flux was calculated by Short Cut
+    'and based on a program execution rate (scan rate) of 5 Seconds.
+    'If you change the program execution rate outside of Short Cut with the CRBasic Editor
+    'you will need to recalculate this multiplier. See the sensor manual for more details.
+    sol_rad_MJ=sol_rad*20E-06
     'CS320 Digital Thermopile Pyranometer heater control
+    'Dew point calculation 'dew_point'
     DewPoint(dew_point,air_temp_0200,rh)
-    AirDewDif=pyran_temp-dew_point
-    If pyran_temp < 2 OR AirDewDif < 2 Then HtrCtrl = True
-    If pyran_temp > 3 AND AirDewDif > 3 Then HtrCtrl = False
+    'Calculate the difference 'AirDewDif' between the CS320 temperature and dewpoint
+    AirDewDif=pyran_Temp-dew_point
+    'If the CS320 temperature or the difference between the CS320 temperature and dew point are less than 2 degrees C, turn the CS320 heater on
+    If pyran_Temp < 2 OR AirDewDif < 2 Then HtrCtrl = True
+    'If the CS320 temperature and the difference between the CS320 temperature and dew point are greater than 3 degrees C, turn the CS320 heater off
+    If pyran_Temp > 3 AND AirDewDif > 3 Then HtrCtrl = False
+    'Always turn the CS320 heater off if the datalogger battery voltage is less than 11.7 volts
     If batt_volt < 11.7 Then HtrCtrl = False
+    'Issue the appropriate SDI-12 command to turn the CS320 heater on or off depending on the state of the 'HtrCtrl' variable
     If HtrCtrl = True Then
-      SDI12Recorder(Htr,C5,"3","XHON!",1,0)
+      SDI12Recorder(Htr,C3,"2","XHON!",1,0)
     Else
-      SDI12Recorder(Htr,C5,"3","XHOFF!",1,0)
+      SDI12Recorder(Htr,C3,"2","XHOFF!",1,0)
     EndIf
 
-'*****SENSOR_6 Pluviometer*******************************
-'***Pluviometer: HydroMet PluvioII ****ADD HEATER
-'    Green:  	C5:     SDI-12 data  SDI_ADD 2
-    SDI12Recorder(Pluvio(),C5,"2","C!",1,0,-1)
+    'Set pulse width modulation duty cycle for TS100SS Aspirated Radiation Shield
+    'fan speed control based on reference solar radiation measurement 'sol_rad'
+    If sol_rad>10 Then
+      TS100SS_Duty_Cycle=1
+    Else
+      TS100SS_Duty_Cycle=0.5
+    EndIf
+    'Control TS100SS Aspirated Radiation Shield fan speed
+    PWM(TS100SS_Duty_Cycle,C5,50,uSec)
 
-'*****SENSOR_8 RH-temp*******************************
-'***RH-temp Sensor: HygrovUE10
-'    White:   C5      SDI-12 data  SDI_ADD: 4
-    SDI12Recorder(rhtemp(),C5,"4","C!",1,0)  
+    'Pluvio2 SDI-12 Sensor measurements
+    SDI12Recorder(Pluvio(),C3,"1","M!",1,0,-1)
 
     SemaphoreRelease (1)
 
-'*********COMMUNICATION CONTROLS*********************************************
-' Force logger to use the PPP network to connect to the Konect PakBus router and related DNS servers
+
+    ' Since Ethernet is the default port, force the logger to use the PPP network to 
+    ' connect to the Konect PakBus router, as well as the DNS servers needed to resolve
+    ' the Konect server
 
     IPRoute("minos.konectgds.com",1,1)
     
 	  SplitStr (PPPInfo(),Status.PPPInfo,CHR(13)&CHR(10),10,5)
-	  For i = 1 To 4    'Reduced to 4 from 10 iterations per scan made by second iteration in practice
+	  For i = 1 To 10
 	    If InStr (1,PPPInfo(i),"dns: ",2) > 0 Then
 	      PPPInfo(i) = Replace (PPPInfo(i),"dns: ","")
 	      IPRoute(PPPInfo(i),1,1)
 	    EndIf
 	  Next i
 
-    CallTable FiveMin
-
   NextScan
 
-  SlowSequence  '(2)
+  SlowSequence
 
-'*****SENSOR_4 Soil Sensor Array*******************************
-'***Soil Sensor Array: 5 Soillima... SDI12 array in terminal block
-'    Blue:    C3      SDI-12 data  SDI_ADD 1-5
   Scan (1,Min,3,0)    
     If IfTime(4,5,min) Then
-      SDI12Recorder(soil_1(),C3,"1","M!",1,0,-1)
-      SDI12Recorder(soil_2(),C3,"2","M!",1,0,-1)
-      SDI12Recorder(soil_3(),C3,"3","M!",1,0,-1)
-      SDI12Recorder(soil_4(),C3,"4","M!",1,0,-1)
-      SDI12Recorder(soil_5(),C3,"5","M!",1,0,-1)
+      'Generic SDI-12 Sensor measurements 'Soil_VWC_0005', 'Soil_Temp_0005', 'BulkEC_TempCor_0005',
+      'Res4', 'Res5', 'Res6', 'Res7_2', 'Res8_2', and 'Res9_2'
+      SDI12Recorder(Soil_1(),C1,"0","M!",1,0,-1)
+      'Generic SDI-12 Sensor measurements 'Soil_VWC_0010', 'Soil_Temp_0010', 'BulkEC_TempCor_0010',
+      'Res4_2', 'Res5_2', 'Res6_2', 'Res7_3', 'Res8_3', and 'Res9_3'
+      SDI12Recorder(Soil_2(),C1,"1","M!",1,0,-1)
+      'Generic SDI-12 Sensor measurements 'Soil_VWC_0020', 'Soil_Temp_0020', 'BulkEC_TempCor_0020',
+      'Res4_3', 'Res5_3', 'Res6_3', 'Res7_4', 'Res8_4', and 'Res9_4'
+      SDI12Recorder(Soil_3(),C1,"2","M!",1,0,-1)
+      'Generic SDI-12 Sensor measurements 'Soil_VWC_0050', 'Soil_Temp_0050', 'BulkEC_TempCor_0050',
+      'Res4_4', 'Res5_4', 'Res6_4', 'Res7_5', 'Res8_5', and 'Res9_5'
+      SDI12Recorder(Soil_4(),C1,"3","M!",1,0,-1)
+      'Generic SDI-12 Sensor measurements 'Soil_VWC_0100', 'Soil_Temp_0100', 'BulkEC_TempCor_0100',
+      'Res4_5', 'Res5_5', 'Res6_5', 'Res7_6', 'Res8_6', and 'Res9_6'
+      SDI12Recorder(Soil_5(),C1,"4","M!",1,0,-1)
     EndIf
   NextScan
 
+  SlowSequence
 
-  SlowSequence '(3)
-    'Calls for Cameras, Modem Power recycle
-
-'*****SENSOR_9 Cameras*******************************
-'***3 Cameras to Monitor Site 2x per Day: D-Link 470x
-'    Cat5 Pigtail  Ethernet Port to POE Switch
-'    Red:    SW1  POE Power
-'    Black:  G    POE Ground
-'    Camera Password:  59812mc0
   Scan (1,Min,3,0)
-    If capturephotos = true Then        'Makes photos
-      IPRoute ("192.168.1.20",0,1) 'Force HttpGet out ethernet port Camera N
-      IPRoute ("192.168.1.30",0,1) 'Force HttpGet out ethernet port Camera S
-      IPRoute ("192.168.1.40",0,1) 'Force HttpGet out ethernet port Camera G
+
+    If Make_Photos = true Then        'Makes photos
+      IPRoute ("192.168.1.20",0,1) 'Force HttpGet out ethernet port Camera A -> N
+      IPRoute ("192.168.1.30",0,1) 'Force HttpGet out ethernet port Camera B -> S
+      IPRoute ("192.168.1.40",0,1) 'Force HttpGet out ethernet port Camera C -> G
       RealTime (rTime)
       Sprintf (newfilename_N,"%04i%02i%02i_%02i%02i_N.jpg",Year,Month,DOM,Hour,Minute)
       Sprintf (newfilename_S,"%04i%02i%02i_%02i%02i_S.jpg",Year,Month,DOM,Hour,Minute)
       Sprintf (newfilename_G,"%04i%02i%02i_%02i%02i_G.jpg",Year,Month,DOM,Hour,Minute)
 
-   ' For unknown reasons, successful image capture may require multiple attempts
-      n = 0 ' For camera N
+      ' For unknown reasons, it may take multiple attempts to successfully capture a camera
+      ' image.  So try up to 9 times to get an image.  The variables "makepic_N" and 
+      ' "makepic_S" reflect how many attempts it took to get a successful image.  A value
+      ' of zero means that it was unsuccessful.
+
+      n = 0 ' For camera A
       Do
-        makepic_N = HTTPGet ("http://admin:59812mc0@192.168.1.20/image/jpeg.cgi?profile=1","CRD:"&newfilename_N,"")  '
+        makepic_N = HTTPGet ("http://admin:59812boz@192.168.1.20/image/jpeg.cgi","CRD:"&newfilename_N,"")  '
         n = n + 1
-      Loop While makepic_N = 0 AND n < 4
+      Loop While makepic_N = 0 AND n < 10
       If makepic_N > 0 Then
         makepic_N = n
-        'FileCopy ("CRD:"&newfilename_N,"USR:"&newfilename_N)  'Transfer photo from CARD to URS drive
+        FileCopy ("CRD:"&newfilename_N,"USR:"&newfilename_N)  'Transfer photo from CARD to URS drive
       EndIf
       
-      n = 0 ' For camera S
+      n = 0 ' For camera B
       Do
-        makepic_S = HTTPGet ("http://admin:59812mc0@192.168.1.30/image/jpeg.cgi?profile=1","CRD:"&newfilename_S,"")
+        makepic_S = HTTPGet ("http://admin:59812boz@192.168.1.30/image/jpeg.cgi","CRD:"&newfilename_S,"")
         n = n + 1
-      Loop While makepic_S = 0 AND n < 4
+      Loop While makepic_S = 0 AND n < 10
       If makepic_S > 0 Then
         makepic_S = n
-        'FileCopy ("CRD:"&newfilename_S,"USR:"&newfilename_S)
+        FileCopy ("CRD:"&newfilename_S,"USR:"&newfilename_S)
       EndIf
       
-      n = 0 ' For camera G
+      n = 0 ' For camera C
       Do
-        makepic_G = HTTPGet ("http://admin:59812mc0@192.168.1.40/image/jpeg.cgi?profile=1","CRD:"&newfilename_G,"")
+        makepic_G = HTTPGet ("http://admin:59812boz@192.168.1.40/image/jpeg.cgi","CRD:"&newfilename_G,"")  '
         n = n + 1
-      Loop While makepic_G = 0 AND n < 4
+      Loop While makepic_G = 0 AND n < 10
       If makepic_G > 0 Then
         makepic_G = n
-        'FileCopy ("CRD:"&newfilename_G,"USR:"&newfilename_G)
+        FileCopy ("CRD:"&newfilename_G,"USR:"&newfilename_G)  'Transfer photo from CARD to URS drive
       EndIf
-
+      
     EndIf
 
-    capturephotos = False
+    Make_Photos = False
 
-'*********************** Cell Modem Reboot *************************************
-    If TimeIsBetween (2,3,1440,min) Then
-			Modem_Power=False
-		Else 
-			Modem_Power=True  
-		EndIf  
-		
-    If batt_volt < 11.4 Then 
-      Modem_Power=false
-    EndIf
-	
-    SW12(SW12_2,Modem_Power) 
-
-  NextScan
-
-  SlowSequence '(4) 
-    ' Calls for Snow Depth Sensor
-
-'*****SENSOR_5 Snow Depth*******************************
-'***Snow Depth Sensor: SR50A     SnowvUE - CONFIRM WHEN NEW SnowvUE RECEIvED
-'    Green:   C5      SDI-12 data  SDI_ADD: 1
+    'Reads SR50A - Snow depth
     ' Logic to make 11 snow depth measurements, sort, store corrected values.
 
-  Scan (1,Min,3,0)
     If SR50A_Go Then
       For n = 1 To 11
-        SemaphoreGet (1) ' To avoid conflicts with other C5 devices in other sequences
-          'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' & 'q'
-          SDI12Recorder(SR50A_Raw(),C5,"1","C1!",1,0,-1)
+        SemaphoreGet (1) ' So as to avoid conflicts with other C3 devices in other seQuences
+          'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' & 'snow_depth_Q'
+          SDI12Recorder(SR50A_Raw(),C3,"0","M1!",1,0,-1)
         SemaphoreRelease (1)
 
         If SR50A_Raw(1) = "NAN" Then
           SR50A(n,1) = -9 : SR50A(n,2) = -9
         Else 'Calculate the temperature corrected distance.
-          SR50A(n,1) = SR50A_Raw(1) * 100 * SQR((air_temp_0200+ 273.15) / 273.15)   'panel_temp - REMOVED
+          SR50A(n,1) = SR50A_Raw(1) * 100 * SQR((air_temp_0200 + 273.15) / 273.15)
           SR50A(n,2) = SR50A_Raw(2) * 1
         EndIf
         Delay (0,4,Sec)
@@ -578,7 +490,7 @@ Modem_Power=true ' turn modem on after compile
       SR50A_Go = False
       SortSpa (Result_SR50A(1,1),11,SR50A(1,1),2)
       TCDT = Result_SR50A(6,1) ' get the median value (#6 of 11)
-      snow_depth_q = Result_SR50A(6,2)
+      snow_depth_Q = Result_SR50A(6,2)
       If Set_D2G Then ' set distance to ground
         Dist2Gnd = TCDT
   		  FH = FileOpen ("USR:Dist2Gnd.txt","w",0) ' save value to file on USR drive
@@ -590,6 +502,8 @@ Modem_Power=true ' turn modem on after compile
       snow_depth = Dist2Gnd - TCDT
     EndIf
 
+    'Call Data Tables and Store Data
+    CallTable FiveMin  
     CallTable StatusReport
 
   NextScan
