@@ -3,8 +3,6 @@
 'Date:  210...'
 'NOTE: Logger Time SET to UTC yearround - re: Camera Image Control
 
-'update all branches
-
 'Attempt to eliminate SkippedScan errors in SlowSequence (3) SR50A
   'Change sdi12recorder command to C! from M!
     'Line 566
