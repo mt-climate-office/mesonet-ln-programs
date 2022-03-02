@@ -1,0 +1,5 @@
+BeginProg
+Scan(1,Sec,0,0)
+If TimeIsBetween (2,50,60,Min) Then SW12(SW12_2,1)
+NextScan
+EndProg
